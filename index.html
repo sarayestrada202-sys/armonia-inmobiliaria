@@ -329,6 +329,7 @@
         <input type="checkbox" name="acepto" required>
         <span>Acepto el tratamiento de mis datos personales según la <a href="#">Política de privacidad</a>. *</span>
       </label>
+      <div class="hp" aria-hidden="true"><label>No llenar este campo<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
       <button class="btn btn-navy btn-block" type="submit">Enviar solicitud <span aria-hidden="true">→</span></button>
       <p class="form-msg" id="formMsg" role="status" aria-live="polite"></p>
     </form>
@@ -366,26 +367,76 @@
 </footer>
 
 <script>
-  // Validación básica del formulario (sin envío real: conecta aquí tu backend / WhatsApp / correo)
-  const form = document.getElementById('leadForm');
-  const msg = document.getElementById('formMsg');
-  form.addEventListener('submit', e => {
+  const form = document.getElementById("leadForm");
+  const msg = document.getElementById("formMsg");
+  const btn = form.querySelector("button[type=submit]");
+  const btnHTML = btn.innerHTML;
+  const WEBFORM_URL = "https://proyecto.nexabit.com.gt/modules/Webforms/capture.php";
+  const WEBFORM_ID = "e3088de2f37e0325c72615e9e338b177";
+  const WHATSAPP = "https://wa.me/50237777519";
+  const val = id => document.getElementById(id).value.trim();
+
+  const THANKS = "¡Gracias! Recibimos tu solicitud y te contactaremos pronto.";
+
+  function buildDescription() {
+    return [
+      ["Me interesa", val("interes")],
+      ["Tipo", val("tipo")],
+      ["Presupuesto", val("presupuesto")],
+      ["Habitaciones", val("habitaciones")],
+      ["Contacto preferido", val("contacto-pref")],
+      ["Mensaje", val("mensaje")]
+    ].filter(([, v]) => v).map(([k, v]) => k + ": " + v).join("\n");
+  }
+
+  function showError() {
+    msg.innerHTML = "No pudimos enviar tu solicitud. Inténtalo de nuevo o escríbenos por <a href='" + WHATSAPP + "' target='_blank' rel='noopener'>WhatsApp</a>.";
+    msg.classList.add("error");
+  }
+
+  function showThanks() {
+    msg.textContent = THANKS;
+    msg.classList.add("ok");
+    form.reset();
+    form.classList.remove("was-validated");
+  }
+
+  form.addEventListener("submit", async e => {
     e.preventDefault();
-    msg.className = 'form-msg';
+    msg.className = "form-msg";
     if (!form.checkValidity()) {
-      form.classList.add('was-validated');
-      msg.textContent = 'Por favor completa los campos obligatorios (*).';
-      msg.classList.add('error');
-      form.querySelector(':invalid')?.focus();
+      form.classList.add("was-validated");
+      msg.textContent = "Por favor completa los campos obligatorios (*).";
+      msg.classList.add("error");
+      form.querySelector(":invalid")?.focus();
       return;
     }
-    console.log(Object.fromEntries(new FormData(form)));
-    msg.textContent = '¡Gracias! Recibimos tu solicitud y te contactaremos pronto.';
-    msg.classList.add('ok');
-    form.reset();
-    form.classList.remove('was-validated');
+    // Honeypot: si un bot lo llena, fingimos éxito sin enviar nada
+    if (form.elements.website.value) { showThanks(); return; }
+
+    btn.disabled = true;
+    btn.textContent = "Enviando…";
+    try {
+      const body = new URLSearchParams({
+        publicid: WEBFORM_ID,
+        name: "Sitio Armonia",
+        lastname: val("nombre"),
+        mobile: val("telefono"),
+        email: val("email"),
+        city: val("zona"),
+        description: buildDescription()
+      });
+      const res = await fetch(WEBFORM_URL, { method: "POST", body });
+      const data = await res.json();
+      if (data && data.success === true) showThanks(); else showError();
+    } catch (err) {
+      showError();
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = btnHTML;
+    }
   });
-  document.querySelectorAll('.nav-links a').forEach(a => a.addEventListener('click', () => document.querySelector('.nav-links').classList.remove('open')));
+  document.querySelectorAll(".nav-links a").forEach(a => a.addEventListener("click", () => document.querySelector(".nav-links").classList.remove("open")));
 </script>
 </body>
 </html>

@@ -200,3 +200,8 @@ h1, h2, h3 { color: var(--navy); line-height: 1.15; letter-spacing: -.01em; }
   .feature { padding: 6px 10px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+
+/* Campo trampa anti-spam (honeypot) */
+.hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.btn:disabled { opacity: .7; cursor: wait; transform: none; box-shadow: none; }
+.form-msg a { color: var(--navy); text-decoration: underline; font-weight: 600; }
